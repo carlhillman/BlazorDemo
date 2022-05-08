@@ -1,0 +1,86 @@
+﻿<h4 style="font-weight:bold">Husdjur</h4>
+
+@if (_pets == null)
+{
+    <img src="~/img/loader.gif" />
+}
+else
+{
+    <table class="table table-striped" id="peopleTable">
+        <thead>
+            <tr>
+                <th>Namn</th>
+                <th>Art</th>
+                <th>Ägarens namn</th>
+                <th style="display: none">id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pet in _pets)
+            {
+                <tr>
+                    <td title="Gå till" @onclick="() => Navigate(pet.PetId)">@pet.Name</td>
+                    <td title="Gå till" @onclick="() => Navigate(pet.PetId)">@pet.Species</td>
+                    <!--ägarens namn-->
+             @*       <td>@pet.EmailAddress</td>*@
+                    <td>
+                        <button class="btn btn-info" @onclick="() => UpdateButtonClicked(pet)">Uppdatera</button>|
+                        <button class="btn btn-danger" @onclick="() => DeleteButtonClicked(pet.PetId)">Ta bort</button>
+                    </td>
+                    <td style="display: none">@pet.PetId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    [Parameter]
+    public string ItemType { get; set; }
+
+    public List<Pet> _pets { get; set; }
+    [Parameter]
+    public EventCallback<Pet> OnUpdateButtonClicked { get; set; }
+
+    protected async Task UpdateButtonClicked(Pet pet)
+    {
+        await OnUpdateButtonClicked.InvokeAsync(pet);
+    }
+    [Parameter]
+    public EventCallback<int> OnDeleteButtonClicked { get; set; }
+    protected async Task DeleteButtonClicked(int id)
+    {
+        await OnDeleteButtonClicked.InvokeAsync(id);
+    }
+
+    private string ApiBaseUri { get; set; }
+    private void SetApiBaseUri()
+    {
+        ApiBaseUri = Configuration.GetSection("ApiBaseUri").Value;
+    }
+
+    private void Navigate(int id)
+    {
+        NavigationManager.NavigateTo($"/pet/petdetail/{id}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SetApiBaseUri();
+        await GetPetsAsync();
+
+    }
+    public async Task GetPetsAsync()
+    {
+        try
+        {
+            var result = HttpClient.GetAsync($"{ApiBaseUri}/api/pet/getall", HttpCompletionOption.ResponseHeadersRead);
+            var contentStream = await result.Result.Content.ReadAsStreamAsync();
+            _pets = await JsonSerializer.DeserializeAsync<List<Pet>>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

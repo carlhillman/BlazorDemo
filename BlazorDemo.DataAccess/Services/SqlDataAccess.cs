@@ -13,15 +13,16 @@ namespace BlazorDemo.DataAccess.Services
     public class SqlDataAccess:ISqlDataAccess
     {
         private readonly IConfiguration _config;
-        private string ConnectionString { get; set; } = "PersonConnection";
+        private string ConnectionString { get; set; } = "BlazorDemoConnection";
         public SqlDataAccess(IConfiguration config)
         {
             _config = config;
+            ConnectionString = _config.GetConnectionString(ConnectionString);
         }
         public async Task<T> LoadDataNoParameterAsync<T>(string sql)
         {
-            var connectionString = _config.GetConnectionString(ConnectionString);
-            using (IDbConnection connection = new SqlConnection(connectionString))
+    
+            using (IDbConnection connection = new SqlConnection(ConnectionString))
             {
                 var data = await connection.QueryFirstOrDefaultAsync<T>(sql);
                 return data;
@@ -30,8 +31,7 @@ namespace BlazorDemo.DataAccess.Services
 
         public async Task<T> LoadDataEntityAsync<T, TU>(string sql, TU parameters)
         {
-            var connectionString = _config.GetConnectionString(ConnectionString);
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new SqlConnection(ConnectionString))
             {
                 var data = await connection.QueryFirstOrDefaultAsync<T>(sql, parameters);
                 return data;
@@ -40,26 +40,26 @@ namespace BlazorDemo.DataAccess.Services
 
         public async Task<List<T>> LoadDataListAsync<T, TU>(string sql, TU parameters)
         {
-            var connectionString = _config.GetConnectionString(ConnectionString);
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new SqlConnection(ConnectionString))
             {
                 var data = await connection.QueryAsync<T>(sql, parameters);
                 return data.ToList();
             }
         }
 
-        public async Task ExecuteSqlAsync<T>(string sql, T parameters)
+        public async Task <bool>ExecuteSqlAsync<T>(string sql, T parameters)
         {
-            var connectionString = _config.GetConnectionString(ConnectionString);
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new SqlConnection(ConnectionString))
             {
                 try
                 {
                     await connection.ExecuteAsync(sql, parameters);
+                    return true;
                 }
                 catch (SqlException ex)
                 {
                     Console.WriteLine(ex.Message);
+                    return false;
                 }
             }
         }

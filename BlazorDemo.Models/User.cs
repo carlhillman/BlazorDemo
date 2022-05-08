@@ -2,13 +2,18 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BlazorDemo.DataAccess.Models
+namespace BlazorDemo.Models
 {
-   public class Person
+    public class User
     {
-        public int Id { get; set; }
+        public int UserId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string EmailAddress { get; set; }
+        public List<Pet> Pets { get; set; }
+        public User()
+        {
+            Pets = new List<Pet>();
+        }
     }
 }

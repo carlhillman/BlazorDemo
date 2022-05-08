@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BlazorDemo.UI.Pages.People
+namespace BlazorDemo.UI.Pages.UserDemo
 {
-    public partial class People
+    public partial class UserDemo
     {
     }
 }

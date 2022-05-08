@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BlazorDemo.UI.Models
 {
-    public class DisplayPerson
+    public class DisplayUser
     {
         public int Id { get; set; }
 

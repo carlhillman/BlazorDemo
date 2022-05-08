@@ -1,0 +1,200 @@
+﻿@page "/Pet/CreateEditForm"
+
+<PageTitle Value="Husdjur" />
+<hr />
+
+<AlertMessage IsVisible="IsVisible" IsValid="IsValid" IsSuccess="IsSuccess">
+    @*    <span>@RecordName</span>*@
+</AlertMessage>
+
+<EditForm Model="@_displayPet" OnValidSubmit="@SavePetAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <label>
+        Namn
+    </label>
+    <InputText id="firstName" @bind-Value="@_displayPet.Name" placeholder="Namn"></InputText>
+
+    @if (!IsUpdating)
+    {
+        <label>
+            Art
+        </label>
+        <select value="@SelectedSpecies" @onchange="SelectSpecies">
+            @foreach (var species in Species)
+            {
+                <option value=@species>@species</option>
+            }
+        </select>
+
+        <label>
+            Husse/Matte
+        </label>
+        <select value "@SelectedOwnerUserId" @onchange="SelectOwner">
+            @foreach (var owner in Owners)
+            {
+                <option value=@owner.UserId>@owner.FirstName</option>
+            }
+        </select>
+
+    }
+    @*    <label>
+        Mailadress
+        <InputText id="emailAddress" @bind-Value="@_displayPet.EmailAddress" placeholder="Email"></InputText>
+        </label>*@
+
+    <button type="submit" class="btn btn-primary">Spara</button>
+</EditForm>
+
+<List @ref="ListComponent" ItemType="pets" OnUpdateButtonClicked="SetUpdateFormData" OnDeleteButtonClicked="DeletePetAsync"></List>
+
+@code {
+
+    List<string> Species = new List<string>() { "Katt", "Hund", "Marsvin", "Kanin" };
+    string SelectedSpecies = "Hund";
+
+    List<User> Owners { get; set; }
+    int SelectedOwnerUserId { get; set; }
+
+    List ListComponent;
+    public List<Pet> _pets;
+    private DisplayPet _displayPet = new DisplayPet();
+    public bool IsVisible { get; set; }
+    public string RecordName { get; set; }
+    public bool IsValid { get; set; }
+    public bool IsUpdating { get; set; }
+    public bool IsSuccess { get; set; }
+    private string ApiBaseUri { get; set; }
+
+    private void SetApiBaseUri()
+    {
+        ApiBaseUri = Configuration.GetSection("ApiBaseUri").Value;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SetApiBaseUri();
+        _displayPet.Species = SelectedSpecies;
+        await SetOwnersList();
+        SelectedOwnerUserId = Owners.FirstOrDefault().UserId;
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task SetOwnersList()
+    {
+        Owners = new List<User>();
+        var result = HttpClient.GetAsync($"{ApiBaseUri}/api/user/getall", HttpCompletionOption.ResponseHeadersRead);
+        var contentStream = await result.Result.Content.ReadAsStreamAsync();
+        Owners = await JsonSerializer.DeserializeAsync<List<User>>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+    }
+
+    public void SetUpdateFormData(Pet pet)
+    {
+        IsUpdating = true;
+        _displayPet.Id = pet.PetId;
+        _displayPet.Name = pet.Name;
+        _displayPet.Species = pet.Species;
+        SelectedSpecies = _displayPet.Species;
+
+    }
+    private void SelectSpecies(ChangeEventArgs e)
+    {
+        SelectedSpecies = e.Value.ToString();
+        _displayPet.Species = SelectedSpecies;
+    }
+    private void SelectOwner(ChangeEventArgs e)
+    {
+        var value = e.Value.ToString();
+        SelectedOwnerUserId = Convert.ToInt32(value);
+    }
+
+    private async Task DeletePetAsync(int id)
+    {
+        try
+        {
+            var result = HttpClient.GetAsync($"{ApiBaseUri}/api/pet/get/{id}", HttpCompletionOption.ResponseHeadersRead);
+            var contentStream = await result.Result.Content.ReadAsStreamAsync();
+            var person = await JsonSerializer.DeserializeAsync<User>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+            var response = await HttpClient.DeleteAsync($"{ApiBaseUri}/api/pet/delete/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                // RecordName = person.FirstName + " " + person.LastName;
+                await ListComponent.GetPetsAsync();
+                IsSuccess = true;
+                IsValid = true;
+                IsVisible = true;
+                //IsDeleting = true;
+            }
+            else
+            {
+                // IsSuccess = false;
+            }
+            //  IsVisible = true;
+        }
+        catch (UriFormatException ex)
+        {
+        }
+    }
+
+    private async Task SavePetAsync()
+    {
+        var pet = new Pet
+            {
+                Name = _displayPet.Name,
+                Species = _displayPet.Species,
+                UserId = SelectedOwnerUserId
+            };
+        try
+        {
+            //Lägger till ett nyt husdjur
+            if (_displayPet.Id == 0)
+            {
+                //IsPosting = true;
+                var content = JsonConvert.SerializeObject(pet);
+                var buffer = Encoding.UTF8.GetBytes(content);
+                var byteContent = new ByteArrayContent(buffer);
+                byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                var response = await HttpClient.PostAsync($"{ApiBaseUri}/api/pet/post", byteContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    await ListComponent.GetPetsAsync();
+                    IsValid = true;
+                    IsSuccess = true;
+                }
+                else
+                {
+                    //IsPosting = false;
+                    IsSuccess = false;
+                }
+            }
+            else
+            {
+                //IsUpdating = true;
+                var content = JsonConvert.SerializeObject(pet);
+                var buffer = Encoding.UTF8.GetBytes(content);
+                var byteContent = new ByteArrayContent(buffer);
+                byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                var response = await HttpClient.PutAsync($"{ApiBaseUri}/api/pet/put/{_displayPet.Id}", byteContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    await ListComponent.GetPetsAsync();
+                    IsValid = true;
+                    IsSuccess = true;
+                }
+                else
+                {
+                    //IsUpdating = false;
+                    IsSuccess = false;
+                }
+            }
+            IsVisible = true;
+            //RecordName = pet.FirstName + " " + pet.LastName;
+            _displayPet = new DisplayPet();
+        }
+        catch (UriFormatException ex)
+        {
+        }
+    }
+}
+

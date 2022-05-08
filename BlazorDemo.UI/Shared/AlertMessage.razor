@@ -1,33 +1,21 @@
 ﻿@if (IsVisible)
 {
-    if (IsValid && !IsDeleting)
+    if (IsValid && IsSuccess)
     {
         <div id="serverValidationsDiv" class="col-10 alert alert-success row">
             <div class="col-11" style="text-align: left">
-                <span>@ChildContent har sparats</span>
+                <span>@*Information om: @ChildContent *@Sparad!</span>
             </div>
             <div class="col-1" style="text-align: right">
                 <a style="text-underline-position:below; cursor: pointer" @onclick="(() => CloseServerValidations())">x</a>
             </div>
         </div>
     }
-
-    else if (IsDeleting)
+    else //ifall error uppstår
     {
         <div id="serverValidationsDiv" class="col-10 alert alert-danger row">
             <div class="col-11" style="text-align: left">
-                <span>@ChildContent har tagits bort</span>
-            </div>
-            <div class="col-1" style="text-align: right">
-                <a style="text-underline-position:below; cursor: pointer" @onclick="(() => CloseServerValidations())">x</a>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div id="serverValidationsDiv" class="col-10 alert alert-danger row">
-            <div class="col-11" style="text-align: left">
-                <span>Vänligen fyll i alla fält!</span>
+                <span>Något gick fel!</span>
             </div>
             <div class="col-1" style="text-align: right">
                 <a style="text-underline-position:below; cursor: pointer" @onclick="(() => CloseServerValidations())">x</a>
@@ -37,23 +25,20 @@
 }
 @code {
     [Parameter]
-    public bool IsVisible { get; set; }
-    [Parameter]
     public RenderFragment ChildContent { get; set; }
+    [Parameter]
+    public bool IsVisible { get; set; }
     [Parameter]
     public bool IsValid { get; set; }
     [Parameter]
-    public bool IsDeleting { get; set; }
+    public bool IsSuccess { get; set; }
 
     protected override Task OnParametersSetAsync()
     {
         return base.OnParametersSetAsync();
     }
-
     private void CloseServerValidations()
     {
         IsVisible = false;
-        IsValid = false;
-        IsDeleting = false;
     }
 }

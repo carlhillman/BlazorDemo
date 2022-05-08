@@ -8,6 +8,6 @@ namespace BlazorDemo.DataAccess.Services
         Task<T> LoadDataNoParameterAsync<T>(string sql);
         Task<T> LoadDataEntityAsync<T, TU>(string sql, TU parameters);
         Task<List<T>> LoadDataListAsync<T, TU>(string sql, TU parameters);
-        Task ExecuteSqlAsync<T>(string sql, T parameters);
+        Task<bool> ExecuteSqlAsync<T>(string sql, T parameters);
     }
 }

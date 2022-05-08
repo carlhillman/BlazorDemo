@@ -1,0 +1,87 @@
+﻿<h4 style="font-weight:bold">Användare</h4>
+
+@if (_users == null)
+{
+    <img src="~/img/loader.gif" />
+}
+else
+{
+    <table class="table table-striped" id="peopleTable">
+        <thead>
+            <tr>
+                <th>Förnamn</th>
+                <th>Efternamn</th>
+                <th>Mailadress</th>
+                <th style="display: none">id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in _users)
+            {
+                <tr>
+                    <td title="Gå till" @onclick="() => Navigate(user.UserId)">@user.FirstName</td>
+                    <td title="Gå till" @onclick="() => Navigate(user.UserId)">@user.LastName</td>
+                    <td>@user.EmailAddress</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => UpdateButtonClicked(user)">Uppdatera</button>|
+                        <button class="btn btn-danger" @onclick="() => DeleteButtonClicked(user.UserId)">Ta bort</button>
+                    </td>
+                    <td style="display: none">@user.UserId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    [Parameter]
+    public string ItemType { get; set; }
+
+    public List<User> _users { get; set; }
+    [Parameter]
+    public EventCallback<User> OnUpdateButtonClicked { get; set; }
+
+    protected async Task UpdateButtonClicked(User user)
+    {
+        await OnUpdateButtonClicked.InvokeAsync(user);
+    }
+    [Parameter]
+    public  EventCallback<int> OnDeleteButtonClicked { get; set; }
+    protected async Task DeleteButtonClicked(int id)
+    {
+        await OnDeleteButtonClicked.InvokeAsync(id);
+    }
+
+    private string ApiBaseUri { get; set; }
+    private void SetApiBaseUri()
+    {
+        ApiBaseUri = Configuration.GetSection("ApiBaseUri").Value;
+    }
+
+    private void Navigate(int id)
+    {
+        NavigationManager.NavigateTo($"/user/userdetail/{id}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SetApiBaseUri();
+        if (ItemType.Equals("users"))
+        {
+            await GetUsersAsync();
+        }
+    }
+    public async Task GetUsersAsync()
+    {
+        try
+        {
+            var result = HttpClient.GetAsync($"{ApiBaseUri}/api/user/getall", HttpCompletionOption.ResponseHeadersRead);
+            var contentStream = await result.Result.Content.ReadAsStreamAsync();
+            _users = await JsonSerializer.DeserializeAsync<List<User>>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

@@ -1,0 +1,40 @@
+﻿@page "/user/userdetail/{UserId:int}"
+
+@using BlazorDemo.UI.Models
+@using Microsoft.Extensions.Configuration
+@using System.Text.Json
+@using JsonSerializer = System.Text.Json.JsonSerializer
+
+@inject HttpClient HttpClient
+@inject IConfiguration Configuration
+
+<h4>@_displayUser.FirstName</h4>
+<h4>@_displayUser.LastName</h4>
+<h4>@_displayUser.EmailAddress</h4>
+
+@code {
+    [Parameter]
+    public int UserId { get; set; }
+
+    readonly DisplayUser _displayUser = new DisplayUser();
+    User _user = new User();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var apiBaseUri = Configuration.GetSection("ApiBaseUri").Value;
+            var result = HttpClient.GetAsync($"{apiBaseUri}/api/user/get/{UserId}", HttpCompletionOption.ResponseHeadersRead);
+            var contentStream = await result.Result.Content.ReadAsStreamAsync();
+            _user = await JsonSerializer.DeserializeAsync<User>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+
+            _displayUser.FirstName = _user.FirstName;
+            _displayUser.LastName = _user.LastName;
+            _displayUser.EmailAddress = _user.EmailAddress;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

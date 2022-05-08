@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlazorDemo.DataAccess\BlazorDemo.DataAccess.csproj" />
+    <ProjectReference Include="..\BlazorDemo.Models\BlazorDemo.Models.csproj" />
   </ItemGroup>
 
 
